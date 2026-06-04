@@ -32,6 +32,8 @@ services:
     image: mongo:7.0
     container_name: world-cup-mongo
     restart: unless-stopped
+    ports:
+      - '27017:27017'
     volumes:
       - mongo_data:/data/db
     healthcheck:

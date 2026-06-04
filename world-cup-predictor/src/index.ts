@@ -6,6 +6,8 @@ import { registerPostMatchJob } from './cron/postMatchJob';
 import { registerNightJob } from './cron/nightJob';
 import { registerWeeklyReport } from './cron/weeklyReport';
 import { rescheduleUnnotifiedReminders, clearAllTimeouts } from './cron/preMatchJob';
+import { checkAllServices } from './services/health.service';
+import { sendStartupMessage } from './services/telegram.service';
 import { logger } from './utils/logger';
 
 // Minimal HTTP server used only by the Docker HEALTHCHECK
@@ -54,6 +56,18 @@ async function main(): Promise<void> {
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   logger.info('All cron jobs registered — system ready');
+
+  // Check all external services and send a startup message to Telegram.
+  // A failure here should never crash the app — the system can still run without it.
+  try {
+    const statuses = await checkAllServices();
+    await sendStartupMessage(statuses);
+    logger.info('Startup message sent to Telegram');
+  } catch (err) {
+    logger.error('Failed to send startup message to Telegram', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 
   // Run the morning job immediately on startup when set (useful for testing)
   if (process.env.RUN_MORNING_NOW === 'true') {

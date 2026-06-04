@@ -5,6 +5,7 @@ import { withRetry } from '../utils/retry';
 import { IPrediction, WeeklyStats } from '../types';
 import { formatDateIsrael } from '../utils/prompt.builder';
 import { he } from '../i18n/he';
+import type { ServiceStatus } from './health.service';
 
 const tgAxios = axios.create({
   baseURL: `https://api.telegram.org/bot${config.telegramBotToken}`,
@@ -13,13 +14,25 @@ const tgAxios = axios.create({
 
 async function sendMessage(text: string, parseMode: 'HTML' | 'Markdown' = 'HTML'): Promise<void> {
   await withRetry(
-    () =>
-      tgAxios.post('/sendMessage', {
-        chat_id: config.telegramChatId,
-        text,
-        parse_mode: parseMode,
-        disable_web_page_preview: true,
-      }),
+    async () => {
+      try {
+        await tgAxios.post('/sendMessage', {
+          chat_id: config.telegramChatId,
+          text,
+          parse_mode: parseMode,
+          disable_web_page_preview: true,
+        });
+      } catch (err) {
+        // Extract Telegram's error description from the response body
+        const tgError =
+          axios.isAxiosError(err) && err.response?.data?.description
+            ? err.response.data.description
+            : err instanceof Error
+            ? err.message
+            : String(err);
+        throw new Error(`Telegram: ${tgError}`);
+      }
+    },
     { maxAttempts: 3, baseDelayMs: 2000 },
     'telegram-send'
   );
@@ -183,6 +196,15 @@ export async function sendSystemError(context: string, err: unknown): Promise<vo
       sendError: sendErr instanceof Error ? sendErr.message : String(sendErr),
     });
   }
+}
+
+export async function sendStartupMessage(
+  statuses: import('./healthcheck.service').ServiceStatus[]
+): Promise<void> {
+  const serviceLines = statuses
+    .map((s) => `${s.ok ? '✅' : '❌'} ${s.name}${s.ok ? '' : ` — ${s.error}`}`)
+    .join('\n');
+  await sendMessage(he.startup(serviceLines));
 }
 
 export async function sendNoMatchesToday(): Promise<void> {
