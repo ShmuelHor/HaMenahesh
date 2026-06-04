@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables — never commit these
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Docker override files
+docker-compose.override.yml
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Local MongoDB data (if running outside Docker)
+data/
+
+# TypeScript incremental compilation
+*.tsbuildinfo

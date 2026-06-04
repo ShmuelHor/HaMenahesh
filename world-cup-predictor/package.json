@@ -1,0 +1,29 @@
+{
+  "name": "world-cup-predictor",
+  "version": "1.0.0",
+  "description": "World Cup 2026 Auto-Prediction System",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "dev:watch": "ts-node --watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.0",
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.0",
+    "mongoose": "^8.5.0",
+    "node-cron": "^3.0.3",
+    "winston": "^3.13.0",
+    "winston-daily-rotate-file": "^5.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/node-cron": "^3.0.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  }
+}
