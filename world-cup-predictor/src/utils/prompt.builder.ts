@@ -1,5 +1,7 @@
-// Builds the Hebrew-language user message sent to Claude for each match prediction.
-// Prompt content stays Hebrew so Claude produces Hebrew reasoning in its response.
+// Builds the English-language user message sent to Claude for each match prediction.
+// English prompts produce better analytical reasoning from Claude.
+// The reasoning field in Claude's JSON response is requested in Hebrew
+// so it can be displayed directly in Telegram without translation.
 
 import { EnrichedMatch, FDMatch, IPrediction } from '../types';
 import { getFifaRanking } from './fifa-rankings';
@@ -34,19 +36,27 @@ export function countryCodeToFlag(tla: string): string {
 }
 
 export function formatFormRecord(matches: FDMatch[], teamId: number): string {
-  if (!matches.length) return 'אין נתונים';
+  if (!matches.length) return 'N/A';
   return matches
     .slice(0, 5)
     .map((m) => {
-      if (m.score.winner === null) return 'תיקו';
+      if (m.score.winner === null) return 'D';
       if (m.homeTeam.id === teamId) {
-        return m.score.winner === 'HOME_TEAM' ? 'נצ׳' : 'הפ׳';
+        return m.score.winner === 'HOME_TEAM' ? 'W' : 'L';
       }
-      return m.score.winner === 'AWAY_TEAM' ? 'נצ׳' : 'הפ׳';
+      return m.score.winner === 'AWAY_TEAM' ? 'W' : 'L';
     })
     .join(' ');
 }
 
+const ENGLISH_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const ENGLISH_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Used by Telegram messages — returns a Hebrew-formatted date string
 const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const HEBREW_MONTHS = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -65,6 +75,17 @@ export function formatDateIsrael(utcDate: Date): string {
   return `יום ${day}, ${date} ${month} ${year}, ${hours}:${minutes}`;
 }
 
+function formatDateEnglish(utcDate: Date): string {
+  const israel = new Date(utcDate.getTime() + 3 * 60 * 60 * 1000);
+  const day = ENGLISH_DAYS[israel.getUTCDay()];
+  const date = israel.getUTCDate();
+  const month = ENGLISH_MONTHS[israel.getUTCMonth()];
+  const year = israel.getUTCFullYear();
+  const hours = israel.getUTCHours().toString().padStart(2, '0');
+  const minutes = israel.getUTCMinutes().toString().padStart(2, '0');
+  return `${day}, ${date} ${month} ${year}, ${hours}:${minutes} (Israel time)`;
+}
+
 export function buildMatchPrompt(
   enriched: EnrichedMatch,
   history: IPrediction[]
@@ -78,42 +99,43 @@ export function buildMatchPrompt(
   const awayFormStr = formatFormRecord(awayForm, awayTeam.id);
 
   const weatherStr = weather
-    ? `${Math.round(weather.temp)}°C, לחות ${weather.humidity}%, רוח ${Math.round(weather.windSpeed)} קמ"ש` +
-      (weather.rain > 0 ? `, גשם ${weather.rain} מ"מ` : '')
-    : 'אין נתונים';
+    ? `${Math.round(weather.temp)}°C, humidity ${weather.humidity}%, wind ${Math.round(weather.windSpeed)} km/h` +
+      (weather.rain > 0 ? `, rain ${weather.rain} mm/h` : '')
+    : 'unavailable';
 
-  let historyStr = 'אין היסטוריית ניחושים עדיין.';
+  let historyStr = 'No prediction history yet.';
   const finishedHistory = history.filter((p) => p.resultFetched).slice(0, 8);
   if (finishedHistory.length > 0) {
     const rows = finishedHistory.map((p) => {
       const result = p.isExactScore
-        ? '✅ מדויק'
+        ? '✅ exact'
         : p.isCorrectWinner
-        ? '✓ ניצחון נכון'
-        : '✗ טעות';
-      return `  - ניחשתי ${p.homeTeam} ${p.predictedHome}–${p.predictedAway} ${p.awayTeam} → יצא ${p.actualHome}–${p.actualAway} ${result}`;
+        ? '✓ correct winner'
+        : '✗ wrong';
+      return `  - Predicted ${p.homeTeam} ${p.predictedHome}–${p.predictedAway} ${p.awayTeam} → actual ${p.actualHome}–${p.actualAway} ${result}`;
     });
-    historyStr = 'היסטוריית ניחושים קודמים:\n' + rows.join('\n');
+    historyStr = 'Past prediction history:\n' + rows.join('\n');
   }
 
-  return `נתוני המשחק:
-- ${homeTeam.name} (דירוג ${homeRank}) נגד ${awayTeam.name} (דירוג ${awayRank})
-- תאריך: ${formatDateIsrael(new Date(match.utcDate))}
-- מגרש: ${match.venue || 'לא ידוע'}
+  return `MATCH DATA:
+- ${homeTeam.name} (FIFA rank #${homeRank}) vs ${awayTeam.name} (FIFA rank #${awayRank})
+- Date: ${formatDateEnglish(new Date(match.utcDate))}
+- Venue: ${match.venue || 'Unknown'}
+- Stage: ${match.stage}${match.group ? ` — ${match.group}` : ''}
 
-כוח אחרון (5 משחקים):
+RECENT FORM (last 5 matches, most recent first — W=Win, D=Draw, L=Loss):
 - ${homeTeam.name}: ${homeFormStr}
 - ${awayTeam.name}: ${awayFormStr}
 
-ימי מנוחה:
-- ${homeTeam.name}: ${restDaysHome} ימים
-- ${awayTeam.name}: ${restDaysAway} ימים
+REST DAYS SINCE LAST MATCH:
+- ${homeTeam.name}: ${restDaysHome} days
+- ${awayTeam.name}: ${restDaysAway} days
 
-מזג אוויר ביום המשחק:
+WEATHER AT KICK-OFF:
 - ${weatherStr}
 
 ${historyStr}
 
-ענה בJSON בלבד, ללא טקסט נוסף:
-{"home_score": X, "away_score": X, "confidence": X, "reasoning": "הסבר קצר בעברית"}`;
+Reply with JSON only — no other text:
+{"home_score": X, "away_score": X, "confidence": X, "reasoning": "1-3 sentences in Hebrew"}`;
 }

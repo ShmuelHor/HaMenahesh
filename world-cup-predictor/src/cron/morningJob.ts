@@ -15,6 +15,7 @@ import {
 import { schedulePreMatchReminder } from './preMatchJob';
 import { buildMatchPrompt, countryCodeToFlag } from '../utils/prompt.builder';
 import { getFifaRanking } from '../utils/fifa-rankings';
+import { getHebrewName } from '../utils/team-names';
 import { logger } from '../utils/logger';
 import { EnrichedMatch, IPrediction } from '../types';
 
@@ -86,8 +87,8 @@ export async function runMorningJob(): Promise<void> {
 
       const saved = await Prediction.create({
         matchId,
-        homeTeam: match.homeTeam.name,
-        awayTeam: match.awayTeam.name,
+        homeTeam: getHebrewName(match.homeTeam.tla, match.homeTeam.name),
+        awayTeam: getHebrewName(match.awayTeam.tla, match.awayTeam.name),
         homeFlag,
         awayFlag,
         matchDate,

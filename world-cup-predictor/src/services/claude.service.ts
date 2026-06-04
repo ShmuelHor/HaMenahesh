@@ -7,27 +7,33 @@ import { ClaudePredictionResponse } from '../types';
 
 const client = new Anthropic({ apiKey: config.anthropicApiKey });
 
-// System prompt is cached via cache_control: ephemeral.
-// All predictions in a single morning run share the same block,
-// so every call after the first hits the cache (~5 min TTL).
-// The prompt content stays in Hebrew so Claude returns Hebrew reasoning.
-const SYSTEM_PROMPT = `אתה מנתח כדורגל מקצועי ומומחה לגביע העולם. תפקידך לנחש תוצאות משחקים בצורה מדויקת ככל האפשר.
+// System prompt in English for optimal reasoning quality.
+// The `reasoning` field in the JSON response is requested in Hebrew
+// so it can be displayed directly in Telegram messages.
+const SYSTEM_PROMPT = `You are a professional football analyst specializing in FIFA World Cup tournaments.
+Your task is to predict match results as accurately as possible using the data provided.
 
-אתה מקבל נתונים על משחק: דירוג פיפ"א של כל קבוצה, פורמה אחרונה (5 משחקים), ימי מנוחה, ומזג אוויר.
-בנוסף, אתה מקבל את היסטוריית הניחושים הקודמים שלך עם התוצאות האמיתיות — השתמש בזה כדי ללמוד ולשפר.
+You receive for each match:
+- FIFA world ranking of each team (lower number = stronger team)
+- Recent form: last 5 matches (W = Win, D = Draw, L = Loss)
+- Rest days since each team's last match
+- Weather conditions at the venue
+- Your own past prediction history with actual outcomes — learn from your mistakes
 
-עקרונות הניחוש:
-1. קבוצה עם דירוג גבוה יותר (מספר נמוך יותר) היא בדרך כלל חזקה יותר
-2. פורמה אחרונה חשובה מאוד — 3+ ניצחונות רצופים הם סימן חיובי
-3. ימי מנוחה פחות = עייפות גדולה יותר
-4. מגרש נייטרלי — לא לתת יתרון בית
-5. בגביע עולם, הפתעות קורות יותר מבליגות רגילות
+Prediction guidelines:
+1. FIFA ranking is a strong baseline indicator of team quality
+2. Recent form matters heavily — 3+ consecutive wins is a strong positive signal
+3. Fewer rest days = higher fatigue risk, especially in a compressed tournament schedule
+4. All matches are on neutral venues — no home advantage applies
+5. World Cup group stage produces more upsets than knockout rounds
+6. A team eliminated from advancement may field a weaker lineup in the final group game
 
-תמיד ענה בJSON בלבד, ללא שום טקסט נוסף לפני או אחרי.
-פורמט מחייב: {"home_score": NUMBER, "away_score": NUMBER, "confidence": NUMBER, "reasoning": "STRING"}
-- home_score ו-away_score: מספרים שלמים בין 0 ל-5
-- confidence: מספר שלם בין 30 ל-95 (אחוז ביטחון)
-- reasoning: הסבר קצר בעברית (עד 100 מילים)`;
+Output format:
+- Reply with a single JSON object — no markdown, no explanation outside the JSON
+- Required schema: {"home_score": NUMBER, "away_score": NUMBER, "confidence": NUMBER, "reasoning": "STRING"}
+- home_score / away_score: integers 0–5
+- confidence: integer 30–95 (your estimated probability the predicted outcome is correct)
+- reasoning: 1–3 sentences in Hebrew explaining the key factors behind your prediction`;
 
 const ClaudePredictionSchema = z.object({
   home_score: z.number().int().min(0).max(10),
@@ -50,6 +56,7 @@ export async function getPrediction(
           {
             type: 'text' as const,
             text: SYSTEM_PROMPT,
+            // Cached for ~5 min — all matches in a morning run share this block
             cache_control: { type: 'ephemeral' as const },
           },
         ],
@@ -70,7 +77,7 @@ export async function getPrediction(
     cacheCreation: usage['cache_creation_input_tokens'] ?? 0,
   });
 
-  // Extract JSON — handles cases where Claude wraps it in markdown fences
+  // Extract JSON — handles cases where Claude wraps output in markdown fences
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     throw new Error(`Claude returned no JSON: ${rawText.slice(0, 200)}`);
