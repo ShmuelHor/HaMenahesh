@@ -111,9 +111,16 @@ export interface AppConfig {
   anthropicApiKey: string;
   telegramBotToken: string;
   telegramChatId: string;
+  telegramAdminChatId: string;
   openWeatherApiKey: string;
   claudeModel: string;
   nodeEnv: string;
+  cronMorning: string;
+  cronNight: string;
+  cronWeekly: string;
+  cronPostMatch: string;
+  cronDailyHealth: string;
+  preMatchReminderMinutes: number;
 }
 
 // ── Weekly report stats ──────────────────────────────────────────────────────

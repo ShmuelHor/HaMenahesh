@@ -71,15 +71,13 @@ export const he = {
       `⚽ ניחושים מדויקים: ${exact}/${total}`,
   },
 
-  startup: (serviceLines: string) =>
-    `🏆 <b>מנבא המונדיאל 2026 — מוכן לפעולה!</b>\n\n` +
-    `⚽ אני אנחש בשבילך את תוצאות כל משחק בגביע העולם\n` +
-    `🤖 מופעל על ידי Claude AI + נתונים מ-football-data.org\n` +
-    `🌤️ כולל מזג אוויר, דירוגי פיפ"א ופורמה אחרונה\n\n` +
-    `<b>בדיקת חיבורים:</b>\n${serviceLines}\n\n` +
-    `📅 גביע העולם 2026 מתחיל ב-11 יוני\n` +
-    `🇺🇸 🇲🇽 🇨🇦 48 קבוצות | 104 משחקים | 1 אלוף\n\n` +
-    `<b>כל בוקר ב-08:00 תחזיות היום יגיעו אוטומטית ☀️</b>`,
+  startup: (serviceLines: string, allOk: boolean) =>
+    `${allOk ? '🔄 מערכת עלתה' : '⚠️ מערכת עלתה עם שגיאות'}\n\n${serviceLines}`,
+
+  healthCheck: (serviceLines: string, allOk: boolean) =>
+    allOk
+      ? '🟢 כל המערכות פועלות'
+      : `🔴 שירות לא זמין\n\n${serviceLines}`,
 
   system: {
     error: (context: string, message: string) =>

@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import { config } from '../config';
 import { Prediction } from '../models/prediction.model';
 import { sendWeeklyReport, sendSystemError } from '../services/telegram.service';
 import { computeWeeklyStats, daysAgo } from '../utils/stats';
@@ -39,7 +40,7 @@ async function runWeeklyReport(): Promise<void> {
 
 export function registerWeeklyReport(): void {
   cron.schedule(
-    '0 20 * * 0',
+    config.cronWeekly,
     async () => {
       try {
         await runWeeklyReport();
@@ -53,5 +54,5 @@ export function registerWeeklyReport(): void {
     { timezone: 'Asia/Jerusalem' }
   );
 
-  logger.info('Weekly report job registered (Sunday 20:00 Israel time)');
+  logger.info(`Weekly report job registered (${config.cronWeekly})`);
 }

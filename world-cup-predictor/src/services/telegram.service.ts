@@ -198,13 +198,51 @@ export async function sendSystemError(context: string, err: unknown): Promise<vo
   }
 }
 
-export async function sendStartupMessage(
-  statuses: import('./healthcheck.service').ServiceStatus[]
-): Promise<void> {
-  const serviceLines = statuses
+async function sendAdminMessage(text: string): Promise<void> {
+  await withRetry(
+    async () => {
+      try {
+        await tgAxios.post('/sendMessage', {
+          chat_id: config.telegramAdminChatId,
+          text,
+          parse_mode: 'HTML',
+          disable_web_page_preview: true,
+        });
+      } catch (err) {
+        const tgError =
+          axios.isAxiosError(err) && err.response?.data?.description
+            ? err.response.data.description
+            : err instanceof Error
+            ? err.message
+            : String(err);
+        throw new Error(`Telegram: ${tgError}`);
+      }
+    },
+    { maxAttempts: 3, baseDelayMs: 2000 },
+    'telegram-admin'
+  );
+}
+
+function buildServiceLines(statuses: import('./health.service').ServiceStatus[]): string {
+  return statuses
     .map((s) => `${s.ok ? '✅' : '❌'} ${s.name}${s.ok ? '' : ` — ${s.error}`}`)
     .join('\n');
-  await sendMessage(he.startup(serviceLines));
+}
+
+export async function sendStartupMessage(
+  statuses: import('./health.service').ServiceStatus[]
+): Promise<void> {
+  const allOk = statuses.every((s) => s.ok);
+  await sendAdminMessage(he.startup(buildServiceLines(statuses), allOk));
+}
+
+export async function sendDailyHealthMessage(
+  statuses: import('./health.service').ServiceStatus[]
+): Promise<void> {
+  const allOk = statuses.every((s) => s.ok);
+  const failed = statuses.filter((s) => !s.ok);
+  const lines = allOk ? '' : buildServiceLines(failed);
+  await sendAdminMessage(he.healthCheck(lines, allOk));
 }
 
 export async function sendNoMatchesToday(): Promise<void> {

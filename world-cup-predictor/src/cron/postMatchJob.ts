@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import { config } from '../config';
 import { IPrediction } from '../types';
 import { Prediction } from '../models/prediction.model';
 import { getMatchById } from '../services/football.service';
@@ -86,7 +87,7 @@ export async function runPostMatchCheck(): Promise<void> {
 }
 
 export function registerPostMatchJob(): void {
-  cron.schedule('*/30 * * * *', async () => {
+  cron.schedule(config.cronPostMatch, async () => {
     logger.debug('Post-match result check running');
     try {
       await runPostMatchCheck();
@@ -97,5 +98,5 @@ export function registerPostMatchJob(): void {
     }
   });
 
-  logger.info('Post-match job registered (every 30 minutes)');
+  logger.info(`Post-match job registered (${config.cronPostMatch})`);
 }

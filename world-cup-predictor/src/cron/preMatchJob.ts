@@ -2,13 +2,14 @@ import { Prediction } from '../models/prediction.model';
 import { sendPreMatchReminder, sendSystemError } from '../services/telegram.service';
 import { logger } from '../utils/logger';
 import { IPrediction } from '../types';
+import { config } from '../config';
 
 // Tracks active timeouts so they can be cleared on graceful shutdown
 export const activeTimeouts = new Set<NodeJS.Timeout>();
 
 export function schedulePreMatchReminder(prediction: IPrediction): void {
   const matchTime = new Date(prediction.matchDate).getTime();
-  const reminderTime = matchTime - 30 * 60 * 1000; // 30 min before kick-off
+  const reminderTime = matchTime - config.preMatchReminderMinutes * 60 * 1000;
   const delayMs = reminderTime - Date.now();
 
   if (delayMs <= 0) {

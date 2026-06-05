@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import { config } from '../config';
 import { Prediction } from '../models/prediction.model';
 import { runPostMatchCheck } from './postMatchJob';
 import { sendSystemError, sendNightSummary } from '../services/telegram.service';
@@ -39,7 +40,7 @@ async function runNightJob(): Promise<void> {
 
 export function registerNightJob(): void {
   cron.schedule(
-    '0 23 * * *',
+    config.cronNight,
     async () => {
       try {
         await runNightJob();
@@ -53,5 +54,5 @@ export function registerNightJob(): void {
     { timezone: 'Asia/Jerusalem' }
   );
 
-  logger.info('Night job registered (23:00 Israel time)');
+  logger.info(`Night job registered (${config.cronNight})`);
 }

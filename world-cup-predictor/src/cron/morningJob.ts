@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import { config } from '../config';
 import { Prediction } from '../models/prediction.model';
 import {
   getTodaysMatches,
@@ -19,6 +20,7 @@ import { getHebrewName } from '../utils/team-names';
 import { logger } from '../utils/logger';
 import { EnrichedMatch, IPrediction } from '../types';
 
+const { cronMorning } = config;
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -138,7 +140,7 @@ export async function runMorningJob(): Promise<void> {
 
 export function registerMorningJob(): void {
   cron.schedule(
-    '0 8 * * *',
+    cronMorning,
     async () => {
       try {
         await runMorningJob();
@@ -152,5 +154,5 @@ export function registerMorningJob(): void {
     { timezone: 'Asia/Jerusalem' }
   );
 
-  logger.info('Morning job registered (08:00 Israel time)');
+  logger.info(`Morning job registered (${cronMorning})`);
 }

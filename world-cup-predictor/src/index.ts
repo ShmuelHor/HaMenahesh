@@ -5,6 +5,7 @@ import { registerMorningJob, runMorningJob } from './cron/morningJob';
 import { registerPostMatchJob } from './cron/postMatchJob';
 import { registerNightJob } from './cron/nightJob';
 import { registerWeeklyReport } from './cron/weeklyReport';
+import { registerDailyHealthJob } from './cron/dailyHealthJob';
 import { rescheduleUnnotifiedReminders, clearAllTimeouts } from './cron/preMatchJob';
 import { checkAllServices } from './services/health.service';
 import { sendStartupMessage } from './services/telegram.service';
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
   registerPostMatchJob();
   registerNightJob();
   registerWeeklyReport();
+  registerDailyHealthJob();
 
   healthServer.listen(3000, () => {
     logger.info('Health endpoint listening on port 3000');
