@@ -34,6 +34,7 @@ export const config: AppConfig = {
   cronNight: process.env.CRON_NIGHT ?? '0 23 * * *',
   cronWeekly: process.env.CRON_WEEKLY ?? '0 20 * * 0',
   cronPostMatch: process.env.CRON_POST_MATCH ?? '*/30 * * * *',
-  cronDailyHealth: process.env.CRON_DAILY_HEALTH ?? '0 9 * * *',
+  // Must fire before cronMorning (08:00) to avoid overlapping football-data.org requests
+  cronDailyHealth: process.env.CRON_DAILY_HEALTH ?? '50 7 * * *',
   preMatchReminderMinutes: parseInt(process.env.PRE_MATCH_REMINDER_MINUTES ?? '30', 10),
 };

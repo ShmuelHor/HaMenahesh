@@ -46,7 +46,7 @@ export async function withRetry<T>(
       const jitter = baseDelay * 0.1 * (Math.random() * 2 - 1);
       const delayMs = Math.min(baseDelay + jitter, opts.maxDelayMs);
 
-      logger.warn(`Retry attempt ${attempt}/${opts.maxAttempts - 1}`, {
+      logger.warn(`Retry ${attempt}/${opts.maxAttempts - 1}`, {
         context,
         error: err instanceof Error ? err.message : String(err),
         nextDelayMs: Math.round(delayMs),
