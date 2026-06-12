@@ -3,7 +3,8 @@ import { config } from '../config';
 import { logger } from '../utils/logger';
 import { withRetry } from '../utils/retry';
 import { IPrediction, WeeklyStats } from '../types';
-import { formatDateIsrael } from '../utils/prompt.builder';
+import { formatDateIsrael, formatMatchDateTime } from '../utils/prompt.builder';
+import { getVenueInfo } from '../utils/venue-info';
 import { he } from '../i18n/he';
 import type { ServiceStatus } from './health.service';
 
@@ -38,71 +39,36 @@ async function sendMessage(text: string, parseMode: 'HTML' | 'Markdown' = 'HTML'
   );
 }
 
-export async function sendPrediction(prediction: IPrediction): Promise<void> {
-  const dateStr = formatDateIsrael(prediction.matchDate);
+export async function sendMatchPrediction(prediction: IPrediction): Promise<void> {
+  const { date, time } = formatMatchDateTime(new Date(prediction.matchDate));
+  const venueInfo = getVenueInfo(prediction.venue);
 
   const lines = [
     he.prediction.header,
     '',
-    he.prediction.match(
-      prediction.homeFlag, prediction.homeTeam,
-      prediction.predictedHome, prediction.predictedAway,
-      prediction.awayTeam, prediction.awayFlag
-    ),
+    he.prediction.match(prediction.homeFlag, prediction.homeTeam, prediction.awayTeam, prediction.awayFlag),
     '',
-    he.prediction.date(dateStr),
-    he.prediction.venue(prediction.venue),
-    he.prediction.ranks(prediction.homeRank, prediction.awayRank),
-    he.prediction.confidence(prediction.confidence),
+    he.prediction.score(prediction.predictedHome, prediction.predictedAway),
+    '',
+    he.prediction.datetime(date, time),
+  ];
+
+  if (prediction.venue) {
+    lines.push(he.prediction.stadium(prediction.venue));
+  }
+  if (venueInfo) {
+    lines.push(he.prediction.location(venueInfo.city, venueInfo.country, venueInfo.flag));
+  }
+
+  lines.push(
+    '',
+    `${he.prediction.ranks(prediction.homeRank, prediction.awayRank)}   |   ${he.prediction.confidence(prediction.confidence)}`,
     '',
     he.prediction.reasoning(prediction.reasoning),
-  ];
+  );
 
   await sendMessage(lines.join('\n'));
-  logger.info('Prediction sent to Telegram', { matchId: prediction.matchId });
-}
-
-export async function sendDailySummary(
-  predictions: IPrediction[],
-  totalCorrect: number,
-  totalPredictions: number
-): Promise<void> {
-  if (!predictions.length) return;
-
-  const dateLabel = formatDateIsrael(predictions[0].matchDate).split(',')[0].replace('יום ', '');
-  const lines: string[] = [he.dailySummary.header(dateLabel), ''];
-
-  for (const p of predictions) {
-    lines.push(
-      he.dailySummary.matchLine(p.homeFlag, p.homeTeam, p.predictedHome, p.predictedAway, p.awayTeam, p.awayFlag),
-      he.dailySummary.confidenceLine(p.confidence, p.homeRank, p.awayRank),
-      p.reasoning,
-      ''
-    );
-  }
-
-  if (totalPredictions > 0) {
-    lines.push(he.dailySummary.accuracy(totalCorrect, totalPredictions));
-  }
-
-  await sendMessage(lines.join('\n'));
-  logger.info('Daily summary sent to Telegram', { count: predictions.length });
-}
-
-export async function sendPreMatchReminder(prediction: IPrediction): Promise<void> {
-  const lines = [
-    he.preMatch.header,
-    '',
-    he.preMatch.match(prediction.homeFlag, prediction.homeTeam, prediction.awayTeam, prediction.awayFlag),
-    '',
-    he.preMatch.prediction(prediction.predictedHome, prediction.predictedAway),
-    he.preMatch.confidence(prediction.confidence),
-    '',
-    he.preMatch.reasoning(prediction.reasoning),
-  ];
-
-  await sendMessage(lines.join('\n'));
-  logger.info('Pre-match reminder sent', { matchId: prediction.matchId });
+  logger.info('Match prediction sent to Telegram', { matchId: prediction.matchId });
 }
 
 export async function sendPostMatchResult(prediction: IPrediction): Promise<void> {
@@ -249,6 +215,46 @@ export async function sendNoMatchesToday(): Promise<void> {
   const today = new Date();
   const dateStr = `${today.getUTCDate()}/${today.getUTCMonth() + 1}/${today.getUTCFullYear()}`;
   await sendMessage(he.system.noMatchesToday(dateStr));
+}
+
+export async function sendYesterdaySummary(
+  predictions: IPrediction[],
+  overallCorrect: number,
+  overallTotal: number,
+  overallExact: number
+): Promise<void> {
+  const finished = predictions.filter((p) => p.resultFetched);
+  const correct = finished.filter((p) => p.isCorrectWinner).length;
+  const exact = finished.filter((p) => p.isExactScore).length;
+
+  const lines: string[] = [he.yesterdaySummary.header, ''];
+
+  for (const p of predictions) {
+    if (p.resultFetched) {
+      const icon = p.isExactScore ? '✅' : p.isCorrectWinner ? '✓' : '❌';
+      lines.push(he.yesterdaySummary.matchRow(
+        icon, p.homeFlag, p.homeTeam, p.predictedHome, p.predictedAway,
+        p.awayTeam, p.awayFlag, p.actualHome!, p.actualAway!
+      ));
+    } else {
+      lines.push(he.yesterdaySummary.pending(p.homeFlag, p.homeTeam, p.awayTeam, p.awayFlag));
+    }
+  }
+
+  lines.push('');
+
+  if (finished.length > 0) {
+    lines.push(he.yesterdaySummary.accuracy(correct, finished.length, exact));
+  } else {
+    lines.push(he.yesterdaySummary.noResults);
+  }
+
+  if (overallTotal > 0) {
+    lines.push(he.yesterdaySummary.overallAccuracy(overallCorrect, overallTotal, overallExact));
+  }
+
+  await sendMessage(lines.join('\n'));
+  logger.info('Last-24h summary sent to Telegram', { total: predictions.length, finished: finished.length });
 }
 
 export async function sendNightSummary(

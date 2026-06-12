@@ -80,6 +80,6 @@ export const HEBREW_TEAM_NAMES: Record<string, string> = {
   NZL: 'ניו זילנד',
 };
 
-export function getHebrewName(tla: string, fallback: string): string {
-  return HEBREW_TEAM_NAMES[tla.toUpperCase()] ?? fallback;
+export function getHebrewName(tla: string | null, fallback: string): string {
+  return (tla ? HEBREW_TEAM_NAMES[tla.toUpperCase()] : null) ?? fallback;
 }

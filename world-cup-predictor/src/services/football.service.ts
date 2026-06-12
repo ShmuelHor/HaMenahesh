@@ -63,6 +63,32 @@ export async function getTeamLastNMatches(
   );
 }
 
+export async function getMatchesInWindow(from: Date, to: Date): Promise<FDMatch[]> {
+  const dateFrom = from.toISOString().split('T')[0];
+  const dateTo = to.toISOString().split('T')[0];
+
+  const response = await withRetry(
+    () =>
+      fdAxios.get<FDMatchesResponse>('/v4/competitions/WC/matches', {
+        params: { dateFrom, dateTo },
+      }),
+    { maxAttempts: 3, baseDelayMs: 2000 },
+    'getMatchesInWindow'
+  );
+
+  const matches = response.data.matches.filter(
+    (m) =>
+      m.status !== 'POSTPONED' &&
+      m.status !== 'CANCELLED' &&
+      m.status !== 'SUSPENDED' &&
+      new Date(m.utcDate) >= from &&
+      new Date(m.utcDate) < to
+  );
+
+  logger.info(`Found ${matches.length} matches in window`);
+  return matches;
+}
+
 export async function getMatchById(matchId: number): Promise<FDMatch> {
   logger.debug('Fetching match by id', { matchId });
 

@@ -2,25 +2,27 @@ import cron from 'node-cron';
 import { config } from '../config';
 import { Prediction } from '../models/prediction.model';
 import {
-  getTodaysMatches,
+  getMatchesInWindow,
   getTeamLastNMatches,
   computeRestDays,
 } from '../services/football.service';
 import { getMatchWeather } from '../services/weather.service';
 import { getPrediction } from '../services/claude.service';
 import {
-  sendDailySummary,
+  sendMatchPrediction,
   sendSystemError,
   sendNoMatchesToday,
+  sendYesterdaySummary,
 } from '../services/telegram.service';
-import { schedulePreMatchReminder } from './preMatchJob';
 import { buildMatchPrompt, countryCodeToFlag } from '../utils/prompt.builder';
 import { getFifaRanking } from '../utils/fifa-rankings';
 import { getHebrewName } from '../utils/team-names';
 import { logger } from '../utils/logger';
 import { EnrichedMatch, IPrediction } from '../types';
+import { runPostMatchCheck } from './postMatchJob';
 
 const { cronMorning } = config;
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -28,11 +30,39 @@ function sleep(ms: number): Promise<void> {
 export async function runMorningJob(): Promise<void> {
   logger.info('Morning job started');
 
-  const matches = await getTodaysMatches();
+  const now = new Date();
+  const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const next24hEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  // 1. Fetch any outstanding results from the last 24h into MongoDB
+  await runPostMatchCheck();
+
+  // 2. Send summary of last 24 hours
+  const recentPredictions = await Prediction.find({
+    matchDate: { $gte: last24hStart, $lte: now },
+  })
+    .sort({ matchDate: 1 })
+    .lean();
+
+  if (recentPredictions.length > 0) {
+    const overallTotal = await Prediction.countDocuments({ resultFetched: true });
+    const overallCorrect = await Prediction.countDocuments({ resultFetched: true, isCorrectWinner: true });
+    const overallExact = await Prediction.countDocuments({ resultFetched: true, isExactScore: true });
+    await sendYesterdaySummary(
+      recentPredictions as unknown as IPrediction[],
+      overallCorrect,
+      overallTotal,
+      overallExact
+    );
+  }
+
+  // 3. Predictions for next 24 hours
+  const matches = await getMatchesInWindow(now, next24hEnd);
 
   if (!matches.length) {
-    logger.info('No matches today');
+    logger.info('No matches in next 24 hours');
     await sendNoMatchesToday();
+    logger.info('Morning job completed', { processed: 0 });
     return;
   }
 
@@ -43,19 +73,16 @@ export async function runMorningJob(): Promise<void> {
     const matchId = `fd-${match.id}`;
 
     try {
-      // Skip if prediction already exists (idempotency guard)
       const existing = await Prediction.findOne({ matchId }).lean();
       if (existing) {
         logger.info('Prediction already exists, skipping', { matchId });
         predictions.push(existing as unknown as IPrediction);
-        schedulePreMatchReminder(existing as unknown as IPrediction);
         continue;
       }
 
       logger.info(`Processing: ${match.homeTeam.name} vs ${match.awayTeam.name}`);
       const matchDate = new Date(match.utcDate);
 
-      // Fetch form with delays to respect the 10 req/min free-tier rate limit
       const homeForm = await getTeamLastNMatches(match.homeTeam.id, 5, 6000);
       const awayForm = await getTeamLastNMatches(match.awayTeam.id, 5, 6000);
 
@@ -73,7 +100,6 @@ export async function runMorningJob(): Promise<void> {
         weather,
       };
 
-      // Load recent history so Claude can learn from past performance
       const history = await Prediction.find({ resultFetched: true })
         .sort({ matchDate: -1 })
         .limit(10)
@@ -109,16 +135,13 @@ export async function runMorningJob(): Promise<void> {
 
       const predDoc = saved.toObject() as unknown as IPrediction;
       predictions.push(predDoc);
-      schedulePreMatchReminder(predDoc);
 
       logger.info(`Prediction saved: ${match.homeTeam.name} ${claudeResult.home_score}–${claudeResult.away_score} ${match.awayTeam.name}`, {
         confidence: claudeResult.confidence,
       });
 
-      // Brief pause to avoid hitting Claude rate limits between matches
       await sleep(2000);
     } catch (err) {
-      // One match failing should not block the rest
       logger.error(`Failed to process match ${matchId}`, {
         error: err instanceof Error ? err.message : String(err),
       });
@@ -126,13 +149,8 @@ export async function runMorningJob(): Promise<void> {
     }
   }
 
-  if (predictions.length > 0) {
-    const totalHistory = await Prediction.countDocuments({ resultFetched: true });
-    const correctHistory = await Prediction.countDocuments({
-      resultFetched: true,
-      isCorrectWinner: true,
-    });
-    await sendDailySummary(predictions, correctHistory, totalHistory);
+  for (const pred of predictions) {
+    await sendMatchPrediction(pred);
   }
 
   logger.info('Morning job completed', { processed: predictions.length });

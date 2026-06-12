@@ -66,6 +66,6 @@ export const FIFA_RANKINGS: Record<string, number> = {
   TRI: 60,
 };
 
-export function getFifaRanking(tla: string): number {
-  return FIFA_RANKINGS[tla.toUpperCase()] ?? 99;
+export function getFifaRanking(tla: string | null): number {
+  return tla ? (FIFA_RANKINGS[tla.toUpperCase()] ?? 99) : 99;
 }

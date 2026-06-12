@@ -55,9 +55,10 @@ function findVenueCoords(venue: string): VenueCoords | null {
 }
 
 export async function getMatchWeather(
-  venue: string,
+  venue: string | null | undefined,
   matchDateUtc: Date
 ): Promise<WeatherData | null> {
+  if (!venue) return null;
   const coords = findVenueCoords(venue);
   if (!coords) {
     logger.debug('No venue coordinates found, skipping weather', { venue });

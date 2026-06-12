@@ -3,33 +3,15 @@
 
 export const he = {
   prediction: {
-    header: '⚽ <b>תחזית גביע העולם 2026</b>',
-    match: (homeFlag: string, home: string, h: number, a: number, away: string, awayFlag: string) =>
-      `${homeFlag} <b>${home}</b> ${h}–${a} <b>${away}</b> ${awayFlag}`,
-    date: (dateStr: string) => `📅 ${dateStr}`,
-    venue: (v: string) => `🏟️ ${v || 'לא ידוע'}`,
-    ranks: (homeRank: number, awayRank: number) =>
-      `📊 דירוג פיפ"א: מקום ${homeRank} נגד מקום ${awayRank}`,
-    confidence: (pct: number) => `🔮 ביטחון: ${pct}%`,
-    reasoning: (text: string) => `💭 ${text}`,
-  },
-
-  dailySummary: {
-    header: (dateLabel: string) => `⚽ <b>ניחושי המונדיאל — ${dateLabel}</b>`,
-    matchLine: (homeFlag: string, home: string, h: number, a: number, away: string, awayFlag: string) =>
-      `${homeFlag} ${home} ${h}–${a} ${away} ${awayFlag}`,
-    confidenceLine: (pct: number, homeRank: number, awayRank: number) =>
-      `ביטחון: ${pct}% | דירוג: ${homeRank} נגד ${awayRank}`,
-    accuracy: (correct: number, total: number) =>
-      `📊 <b>דיוק עד כה:</b> ${correct}/${total} ניצחונות נכונים`,
-    noStats: '',
-  },
-
-  preMatch: {
-    header: '⏰ <b>עוד 30 דקות!</b>',
+    header: '⚽ <b>תחזית מונדיאל 2026</b>\n───────────────────',
     match: (homeFlag: string, home: string, away: string, awayFlag: string) =>
-      `${homeFlag} ${home} נגד ${away} ${awayFlag}`,
-    prediction: (h: number, a: number) => `🎯 התחזית שלי: ${h}–${a}`,
+      `${homeFlag} <b>${home}</b>  ·  <b>${away}</b> ${awayFlag}`,
+    score: (h: number, a: number) => `🎯 תחזית:  <b>${h} – ${a}</b>`,
+    datetime: (date: string, time: string) => `📅 ${date}   ⏰ ${time} שעון ישראל`,
+    stadium: (name: string) => `🏟 ${name}`,
+    location: (city: string, country: string, flag: string) => `📍 ${city}, ${country} ${flag}`,
+    ranks: (homeRank: number, awayRank: number) =>
+      `📊 דירוג פיפ"א: #${homeRank} מול #${awayRank}`,
     confidence: (pct: number) => `🔮 ביטחון: ${pct}%`,
     reasoning: (text: string) => `💭 ${text}`,
   },
@@ -59,6 +41,19 @@ export const he = {
     matchRow: (icon: string, homeFlag: string, home: string, h: number, a: number, away: string, awayFlag: string, actualH: number, actualA: number) =>
       `${icon} ${homeFlag}${home} ${h}–${a} ${away}${awayFlag} (יצא: ${actualH}–${actualA})`,
     noFinished: 'אין תוצאות לדיווח השבוע.',
+  },
+
+  yesterdaySummary: {
+    header: '📊 <b>סיכום 24 השעות האחרונות — מונדיאל 2026</b>',
+    matchRow: (icon: string, homeFlag: string, home: string, predH: number, predA: number, away: string, awayFlag: string, actualH: number, actualA: number) =>
+      `${icon} ${homeFlag} ${home} ${predH}–${predA} ${away} ${awayFlag}  →  יצא: ${actualH}–${actualA}`,
+    pending: (homeFlag: string, home: string, away: string, awayFlag: string) =>
+      `⏳ ${homeFlag} ${home} נגד ${away} ${awayFlag} — תוצאה טרם נקלטה`,
+    accuracy: (correct: number, total: number, exact: number) =>
+      `📈 <b>דיוק ב-24 שעות:</b> ${correct}/${total} ניצחונות נכונים | ${exact} מדויק`,
+    overallAccuracy: (correct: number, total: number, exact: number) =>
+      `🏆 <b>סה"כ עד כה:</b> ${correct}/${total} ניצחונות נכונים (${Math.round((correct / total) * 100)}%)\n⚽ ניחושים מדויקים: ${exact}/${total} (${Math.round((exact / total) * 100)}%)`,
+    noResults: '⏳ תוצאות 24 השעות האחרונות טרם התקבלו',
   },
 
   nightSummary: {

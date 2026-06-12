@@ -21,7 +21,7 @@ export interface FDTeam {
   id: number;
   name: string;
   shortName: string;
-  tla: string;
+  tla: string | null;
   crest: string;
 }
 
@@ -38,7 +38,7 @@ export interface FDMatch {
     fullTime: FDScore;
     halfTime: FDScore;
   };
-  venue: string;
+  venue: string | null;
 }
 
 export interface FDMatchesResponse {

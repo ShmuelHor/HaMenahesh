@@ -6,9 +6,9 @@ import { registerPostMatchJob } from './cron/postMatchJob';
 import { registerNightJob } from './cron/nightJob';
 import { registerWeeklyReport } from './cron/weeklyReport';
 import { registerDailyHealthJob } from './cron/dailyHealthJob';
-import { rescheduleUnnotifiedReminders, clearAllTimeouts } from './cron/preMatchJob';
 import { checkAllServices } from './services/health.service';
 import { sendStartupMessage } from './services/telegram.service';
+import { startBotListener, stopBotListener } from './services/bot.service';
 import { logger } from './utils/logger';
 
 // Minimal HTTP server used only by the Docker HEALTHCHECK
@@ -29,8 +29,8 @@ const healthServer = http.createServer((req, res) => {
 
 async function gracefulShutdown(signal: string): Promise<void> {
   logger.info(`Received ${signal}, shutting down gracefully`);
+  stopBotListener();
   healthServer.close();
-  clearAllTimeouts();
   await disconnectMongo();
   logger.info('Shutdown complete');
   process.exit(0);
@@ -40,9 +40,6 @@ async function main(): Promise<void> {
   logger.info('World Cup 2026 Predictor starting');
 
   await connectMongo();
-
-  // Recover any pre-match reminders that were pending when the container last stopped
-  await rescheduleUnnotifiedReminders();
 
   registerMorningJob();
   registerPostMatchJob();
@@ -57,6 +54,7 @@ async function main(): Promise<void> {
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
+  startBotListener();
   logger.info('All cron jobs registered — system ready');
 
   // Check all external services and send a startup message to Telegram.

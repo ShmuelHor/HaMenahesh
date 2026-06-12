@@ -31,8 +31,8 @@ const TLA_TO_FLAG: Record<string, string> = {
   NZL: '🇳🇿',
 };
 
-export function countryCodeToFlag(tla: string): string {
-  return TLA_TO_FLAG[tla.toUpperCase()] ?? '🏳️';
+export function countryCodeToFlag(tla: string | null): string {
+  return (tla ? TLA_TO_FLAG[tla.toUpperCase()] : null) ?? '🏳️';
 }
 
 export function formatFormRecord(matches: FDMatch[], teamId: number): string {
@@ -62,6 +62,17 @@ const HEBREW_MONTHS = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
 ];
+
+export function formatMatchDateTime(utcDate: Date): { date: string; time: string } {
+  const israel = new Date(utcDate.getTime() + 3 * 60 * 60 * 1000);
+  const day = HEBREW_DAYS[israel.getUTCDay()];
+  const dd = israel.getUTCDate().toString().padStart(2, '0');
+  const mm = (israel.getUTCMonth() + 1).toString().padStart(2, '0');
+  const yyyy = israel.getUTCFullYear();
+  const hh = israel.getUTCHours().toString().padStart(2, '0');
+  const min = israel.getUTCMinutes().toString().padStart(2, '0');
+  return { date: `${day}, ${dd}.${mm}.${yyyy}`, time: `${hh}:${min}` };
+}
 
 export function formatDateIsrael(utcDate: Date): string {
   // Israel summer time is UTC+3 (IDT)

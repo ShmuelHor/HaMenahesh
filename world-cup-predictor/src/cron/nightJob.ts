@@ -4,7 +4,6 @@ import { Prediction } from '../models/prediction.model';
 import { runPostMatchCheck } from './postMatchJob';
 import { sendSystemError, sendNightSummary } from '../services/telegram.service';
 import { logger } from '../utils/logger';
-import { startOfDay, endOfDay } from '../utils/stats';
 
 async function runNightJob(): Promise<void> {
   logger.info('Night job started');
@@ -13,8 +12,9 @@ async function runNightJob(): Promise<void> {
   await runPostMatchCheck();
 
   const now = new Date();
+  const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const todayPredictions = await Prediction.find({
-    matchDate: { $gte: startOfDay(now), $lte: endOfDay(now) },
+    matchDate: { $gte: last24hStart, $lte: now },
   }).lean();
 
   if (!todayPredictions.length) {

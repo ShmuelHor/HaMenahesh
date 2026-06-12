@@ -5,7 +5,6 @@ import { Prediction } from '../models/prediction.model';
 import { getMatchById } from '../services/football.service';
 import { sendPostMatchResult, sendSystemError } from '../services/telegram.service';
 import { logger } from '../utils/logger';
-import { startOfDay, endOfDay } from '../utils/stats';
 
 function numericMatchId(matchId: string): number {
   return parseInt(matchId.replace('fd-', ''), 10);
@@ -19,8 +18,9 @@ function computeWinner(home: number, away: number): 'HOME' | 'AWAY' | 'DRAW' {
 
 export async function runPostMatchCheck(): Promise<void> {
   const now = new Date();
+  const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
   const pending = await Prediction.find({
-    matchDate: { $gte: startOfDay(now), $lte: endOfDay(now) },
+    matchDate: { $gte: twoDaysAgo, $lte: now },
     resultFetched: false,
   }).lean();
 
