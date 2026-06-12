@@ -3,15 +3,16 @@
 
 export const he = {
   prediction: {
-    header: '⚽ <b>תחזית מונדיאל 2026</b>\n───────────────────',
+    header: '⚽ <b>תחזית מונדיאל 2026</b>',
     match: (homeFlag: string, home: string, away: string, awayFlag: string) =>
       `${homeFlag} <b>${home}</b>  ·  <b>${away}</b> ${awayFlag}`,
-    score: (h: number, a: number) => `🎯 תחזית:  <b>${h} – ${a}</b>`,
-    datetime: (date: string, time: string) => `📅 ${date}   ⏰ ${time} שעון ישראל`,
+    score: (homeFlag: string, h: number, awayFlag: string, a: number) =>
+      `🎯 תחזית:  ${homeFlag} <b>${h}</b> – <b>${a}</b> ${awayFlag}`,
+    datetime: (date: string, time: string) => `📅 ${date}\n⏰ ${time} שעון ישראל`,
     stadium: (name: string) => `🏟 ${name}`,
     location: (city: string, country: string, flag: string) => `📍 ${city}, ${country} ${flag}`,
-    ranks: (homeRank: number, awayRank: number) =>
-      `📊 דירוג פיפ"א: #${homeRank} מול #${awayRank}`,
+    ranks: (homeFlag: string, homeRank: number, awayFlag: string, awayRank: number) =>
+      `📊 דירוג פיפ"א: ${homeFlag} #${homeRank} מול ${awayFlag} #${awayRank}`,
     confidence: (pct: number) => `🔮 ביטחון: ${pct}%`,
     reasoning: (text: string) => `💭 ${text}`,
   },

@@ -53,7 +53,7 @@ export async function sendMatchPrediction(prediction: IPrediction, chatId = conf
     '',
     he.prediction.match(prediction.homeFlag, prediction.homeTeam, prediction.awayTeam, prediction.awayFlag),
     '',
-    he.prediction.score(prediction.predictedHome, prediction.predictedAway),
+    he.prediction.score(prediction.homeFlag, prediction.predictedHome, prediction.awayFlag, prediction.predictedAway),
     '',
     he.prediction.datetime(date, time),
   ];
@@ -67,7 +67,8 @@ export async function sendMatchPrediction(prediction: IPrediction, chatId = conf
 
   lines.push(
     '',
-    `${he.prediction.ranks(prediction.homeRank, prediction.awayRank)}   |   ${he.prediction.confidence(prediction.confidence)}`,
+    he.prediction.ranks(prediction.homeFlag, prediction.homeRank, prediction.awayFlag, prediction.awayRank),
+    he.prediction.confidence(prediction.confidence),
     '',
     he.prediction.reasoning(prediction.reasoning),
   );
