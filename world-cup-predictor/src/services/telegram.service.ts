@@ -3,6 +3,7 @@ import { config } from '../config';
 import { logger } from '../utils/logger';
 import { withRetry } from '../utils/retry';
 import { IPrediction, WeeklyStats } from '../types';
+import { Prediction } from '../models/prediction.model';
 import { formatDateIsrael, formatMatchDateTime } from '../utils/prompt.builder';
 import { getVenueInfo } from '../utils/venue-info';
 import { he } from '../i18n/he';
@@ -13,12 +14,16 @@ const tgAxios = axios.create({
   timeout: 10000,
 });
 
-async function sendMessage(text: string, parseMode: 'HTML' | 'Markdown' = 'HTML'): Promise<void> {
+async function sendMessage(
+  text: string,
+  parseMode: 'HTML' | 'Markdown' = 'HTML',
+  chatId = config.telegramChatId
+): Promise<void> {
   await withRetry(
     async () => {
       try {
         await tgAxios.post('/sendMessage', {
-          chat_id: config.telegramChatId,
+          chat_id: chatId,
           text,
           parse_mode: parseMode,
           disable_web_page_preview: true,
@@ -39,7 +44,7 @@ async function sendMessage(text: string, parseMode: 'HTML' | 'Markdown' = 'HTML'
   );
 }
 
-export async function sendMatchPrediction(prediction: IPrediction): Promise<void> {
+export async function sendMatchPrediction(prediction: IPrediction, chatId = config.telegramChatId): Promise<void> {
   const { date, time } = formatMatchDateTime(new Date(prediction.matchDate));
   const venueInfo = getVenueInfo(prediction.venue);
 
@@ -67,7 +72,7 @@ export async function sendMatchPrediction(prediction: IPrediction): Promise<void
     he.prediction.reasoning(prediction.reasoning),
   );
 
-  await sendMessage(lines.join('\n'));
+  await sendMessage(lines.join('\n'), 'HTML', chatId);
   logger.info('Match prediction sent to Telegram', { matchId: prediction.matchId });
 }
 
@@ -221,7 +226,8 @@ export async function sendYesterdaySummary(
   predictions: IPrediction[],
   overallCorrect: number,
   overallTotal: number,
-  overallExact: number
+  overallExact: number,
+  chatId = config.telegramChatId
 ): Promise<void> {
   const finished = predictions.filter((p) => p.resultFetched);
   const correct = finished.filter((p) => p.isCorrectWinner).length;
@@ -253,8 +259,27 @@ export async function sendYesterdaySummary(
     lines.push(he.yesterdaySummary.overallAccuracy(overallCorrect, overallTotal, overallExact));
   }
 
-  await sendMessage(lines.join('\n'));
+  await sendMessage(lines.join('\n'), 'HTML', chatId);
   logger.info('Last-24h summary sent to Telegram', { total: predictions.length, finished: finished.length });
+}
+
+export async function sendStatsTo(chatId: string): Promise<void> {
+  const total = await Prediction.countDocuments({ resultFetched: true });
+  if (total === 0) {
+    await sendMessage(he.stats.noData, 'HTML', chatId);
+    return;
+  }
+  const correct = await Prediction.countDocuments({ resultFetched: true, isCorrectWinner: true });
+  const exact = await Prediction.countDocuments({ resultFetched: true, isExactScore: true });
+  const lines = [
+    he.stats.header,
+    '',
+    he.stats.total(total),
+    he.stats.winners(correct, total, Math.round((correct / total) * 100)),
+    he.stats.exact(exact, total, Math.round((exact / total) * 100)),
+  ];
+  await sendMessage(lines.join('\n'), 'HTML', chatId);
+  logger.info('Stats sent to Telegram');
 }
 
 export async function sendNightSummary(

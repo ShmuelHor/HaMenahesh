@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { config } from '../config';
 import { checkAllServices } from './health.service';
+import { sendMatchPrediction, sendYesterdaySummary, sendStatsTo } from './telegram.service';
+import { runPostMatchCheck } from '../cron/postMatchJob';
+import { Prediction } from '../models/prediction.model';
+import { IPrediction } from '../types';
 import { logger } from '../utils/logger';
 
 const tgAxios = axios.create({
@@ -21,13 +25,72 @@ async function sendReply(chatId: string, text: string): Promise<void> {
 
 async function handleStatus(chatId: string): Promise<void> {
   logger.info('Status command received');
-  const statuses = await checkAllServices();
-  const allOk = statuses.every((s) => s.ok);
-  const lines = statuses.map((s) =>
-    `${s.ok ? '✅' : '❌'} ${s.name}${s.ok ? '' : ` — ${s.error}`}`
-  );
-  const header = allOk ? '🟢 <b>כל המערכות פועלות</b>' : '🔴 <b>יש בעיות:</b>';
-  await sendReply(chatId, `${header}\n\n${lines.join('\n')}`);
+  try {
+    const statuses = await checkAllServices();
+    const allOk = statuses.every((s) => s.ok);
+    const lines = statuses.map((s) =>
+      `${s.ok ? '✅' : '❌'} ${s.name}${s.ok ? '' : ` — ${s.error}`}`
+    );
+    const header = allOk ? '🟢 <b>כל המערכות פועלות</b>' : '🔴 <b>יש בעיות:</b>';
+    await sendReply(chatId, `${header}\n\n${lines.join('\n')}`);
+  } catch {
+    await sendReply(chatId, '❌ שגיאה בבדיקת השירותים.');
+  }
+}
+
+async function handleSummary(chatId: string): Promise<void> {
+  logger.info('Summary command received');
+  try {
+    await sendReply(chatId, '⏳ מאחזר נתונים...');
+    await runPostMatchCheck();
+
+    const now = new Date();
+    const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const predictions = await Prediction.find({
+      matchDate: { $gte: last24hStart, $lte: now },
+    }).sort({ matchDate: 1 }).lean();
+
+    if (!predictions.length) {
+      await sendReply(chatId, 'ℹ️ לא היו משחקים ב-24 השעות האחרונות.');
+      return;
+    }
+
+    const overallTotal = await Prediction.countDocuments({ resultFetched: true });
+    const overallCorrect = await Prediction.countDocuments({ resultFetched: true, isCorrectWinner: true });
+    const overallExact = await Prediction.countDocuments({ resultFetched: true, isExactScore: true });
+    await sendYesterdaySummary(predictions as unknown as IPrediction[], overallCorrect, overallTotal, overallExact, chatId);
+  } catch {
+    await sendReply(chatId, '❌ שגיאה בשליפת הסיכום.');
+  }
+}
+
+async function handleNext(chatId: string): Promise<void> {
+  logger.info('Next command received');
+  try {
+    const now = new Date();
+    const next = await Prediction.findOne({
+      matchDate: { $gt: now },
+      resultFetched: false,
+    }).sort({ matchDate: 1 }).lean();
+
+    if (!next) {
+      await sendReply(chatId, 'ℹ️ אין משחקים קרובים עם ניחוש.');
+      return;
+    }
+
+    await sendMatchPrediction(next as unknown as IPrediction, chatId);
+  } catch {
+    await sendReply(chatId, '❌ שגיאה בשליפת המשחק הקרוב.');
+  }
+}
+
+async function handleStats(chatId: string): Promise<void> {
+  logger.info('Stats command received');
+  try {
+    await sendStatsTo(chatId);
+  } catch {
+    await sendReply(chatId, '❌ שגיאה בשליפת הנתונים.');
+  }
 }
 
 async function handleUpdate(update: Record<string, unknown>): Promise<void> {
@@ -42,9 +105,10 @@ async function handleUpdate(update: Record<string, unknown>): Promise<void> {
 
   const command = text.split('@')[0].toLowerCase();
 
-  if (command === '/status') {
-    await handleStatus(chatId);
-  }
+  if (command === '/status') await handleStatus(chatId);
+  else if (command === '/summary') await handleSummary(chatId);
+  else if (command === '/next') await handleNext(chatId);
+  else if (command === '/stats') await handleStats(chatId);
 }
 
 async function pollLoop(): Promise<void> {
@@ -79,7 +143,10 @@ async function registerCommands(): Promise<void> {
   try {
     await tgAxios.post('/setMyCommands', {
       commands: [
-        { command: 'status', description: 'בדיקת תקינות כל השירותים' },
+        { command: 'status',  description: 'בדיקת תקינות כל השירותים' },
+        { command: 'summary', description: 'סיכום 24 השעות האחרונות' },
+        { command: 'next',    description: 'המשחק הקרוב הבא' },
+        { command: 'stats',   description: 'סטטיסטיקות כלליות מתחילת הטורניר' },
       ],
       scope: {
         type: 'chat',

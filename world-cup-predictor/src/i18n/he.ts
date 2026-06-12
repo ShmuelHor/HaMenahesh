@@ -66,6 +66,16 @@ export const he = {
       `⚽ ניחושים מדויקים: ${exact}/${total}`,
   },
 
+  stats: {
+    header: '📊 <b>סטטיסטיקות מונדיאל 2026</b>',
+    total: (n: number) => `🎯 סה"כ משחקים שנבדקו: ${n}`,
+    winners: (correct: number, total: number, pct: number) =>
+      `🏆 ניצחונות נכונים: ${correct}/${total} (${pct}%)`,
+    exact: (exact: number, total: number, pct: number) =>
+      `⚽ ניחושים מדויקים: ${exact}/${total} (${pct}%)`,
+    noData: 'ℹ️ עדיין אין נתונים.',
+  },
+
   startup: (serviceLines: string, allOk: boolean) =>
     `${allOk ? '🔄 מערכת עלתה' : '⚠️ מערכת עלתה עם שגיאות'}\n\n${serviceLines}`,
 
