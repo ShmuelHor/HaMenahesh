@@ -5,14 +5,14 @@ export const he = {
   prediction: {
     header: '⚽ <b>תחזית מונדיאל 2026</b>',
     match: (homeFlag: string, home: string, away: string, awayFlag: string) =>
-      `${homeFlag} <b>${home}</b>  ·  <b>${away}</b> ${awayFlag}`,
+      `${homeFlag} <b>${home}</b>  VS  <b>${away}</b> ${awayFlag}`,
     score: (homeFlag: string, h: number, awayFlag: string, a: number) =>
-      `🎯 תחזית:  ${homeFlag} <b>${h}</b> – <b>${a}</b> ${awayFlag}`,
+      `🎯 תחזית:  ${awayFlag} <b>${a}</b> – <b>${h}</b> ${homeFlag}`,
     datetime: (date: string, time: string) => `📅 ${date}\n⏰ ${time} שעון ישראל`,
     stadium: (name: string) => `🏟 ${name}`,
     location: (city: string, country: string, flag: string) => `📍 ${city}, ${country} ${flag}`,
     ranks: (homeFlag: string, homeRank: number, awayFlag: string, awayRank: number) =>
-      `📊 דירוג פיפ"א: ${homeFlag} #${homeRank} מול ${awayFlag} #${awayRank}`,
+      `📊 דירוג פיפ"א: ${awayFlag} #${awayRank} מול ${homeFlag} #${homeRank}`,
     confidence: (pct: number) => `🔮 ביטחון: ${pct}%`,
     reasoning: (text: string) => `💭 ${text}`,
   },
