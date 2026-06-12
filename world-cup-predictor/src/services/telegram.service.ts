@@ -52,6 +52,7 @@ export async function sendMatchPrediction(prediction: IPrediction, chatId = conf
     he.prediction.header,
     '',
     he.prediction.match(prediction.homeFlag, prediction.homeTeam, prediction.awayTeam, prediction.awayFlag),
+    ...(prediction.stage ? [he.prediction.stage(prediction.stage, prediction.group)] : []),
     '',
     he.prediction.datetime(date, time),
   ];

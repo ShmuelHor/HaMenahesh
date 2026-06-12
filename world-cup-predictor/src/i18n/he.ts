@@ -1,11 +1,34 @@
 // All Hebrew strings sent to Telegram, grouped by message type.
 // Only Telegram-facing copy lives here; logger messages stay in English.
 
+const STAGE_NAMES: Record<string, string> = {
+  GROUP_STAGE: 'שלב הבתים',
+  LAST_16: 'שמינית גמר',
+  ROUND_OF_16: 'שמינית גמר',
+  QUARTER_FINALS: 'רבע גמר',
+  SEMI_FINALS: 'חצי גמר',
+  THIRD_PLACE: 'משחק 3-4',
+  FINAL: 'גמר',
+};
+
+const GROUP_NAMES: Record<string, string> = {
+  GROUP_A: 'בית א', GROUP_B: 'בית ב', GROUP_C: 'בית ג',
+  GROUP_D: 'בית ד', GROUP_E: 'בית ה', GROUP_F: 'בית ו',
+  GROUP_G: 'בית ז', GROUP_H: 'בית ח', GROUP_I: 'בית ט',
+  GROUP_J: 'בית י', GROUP_K: 'בית כ', GROUP_L: 'בית ל',
+};
+
+function formatStage(stage: string, group: string | null): string {
+  if (group && GROUP_NAMES[group]) return GROUP_NAMES[group];
+  return STAGE_NAMES[stage] ?? stage;
+}
+
 export const he = {
   prediction: {
-    header: '⚽ <b>תחזית מונדיאל 2026</b>',
+    header: '⚽ <b>מונדיאל 2026</b> ⚽',
+    stage: (stage: string, group: string | null) => `🏆 שלב: ${formatStage(stage, group)}`,
     match: (homeFlag: string, home: string, away: string, awayFlag: string) =>
-      `${homeFlag} <b>${home}</b>  VS  <b>${away}</b> ${awayFlag}`,
+      `<b>${home}</b> ‏${homeFlag}  ✦  ‏${awayFlag} <b>${away}</b>`,
     score: (homeFlag: string, h: number, awayFlag: string, a: number) =>
       `🎯 תחזית:  ${awayFlag} <b>${a}</b> – <b>${h}</b> ${homeFlag}`,
     datetime: (date: string, time: string) => `📅 ${date}\n⏰ ${time} שעון ישראל`,

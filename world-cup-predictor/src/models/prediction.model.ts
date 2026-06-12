@@ -12,6 +12,8 @@ const PredictionSchema = new Schema<PredictionDocument>(
     awayFlag: { type: String, default: '' },
     matchDate: { type: Date, required: true, index: true },
     venue: { type: String, default: '' },
+    stage: { type: String, default: '' },
+    group: { type: String, default: null },
     homeRank: { type: Number, default: 0 },
     awayRank: { type: Number, default: 0 },
     predictedHome: { type: Number, required: true },

@@ -87,6 +87,8 @@ export interface IPrediction {
   awayFlag: string;
   matchDate: Date;
   venue: string;
+  stage: string;
+  group: string | null;
   homeRank: number;
   awayRank: number;
   predictedHome: number;

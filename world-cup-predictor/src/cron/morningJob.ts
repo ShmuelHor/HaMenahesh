@@ -121,6 +121,8 @@ export async function runMorningJob(): Promise<void> {
         awayFlag,
         matchDate,
         venue: match.venue ?? '',
+        stage: match.stage,
+        group: match.group ?? null,
         homeRank,
         awayRank,
         predictedHome: claudeResult.home_score,
