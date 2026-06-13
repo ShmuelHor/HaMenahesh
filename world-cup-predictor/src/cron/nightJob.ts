@@ -1,8 +1,7 @@
 import cron from 'node-cron';
 import { config } from '../config';
-import { Prediction } from '../models/prediction.model';
 import { runPostMatchCheck } from './postMatchJob';
-import { sendSystemError, sendNightSummary } from '../services/telegram.service';
+import { sendSystemError } from '../services/telegram.service';
 import { logger } from '../utils/logger';
 
 async function runNightJob(): Promise<void> {
@@ -11,31 +10,7 @@ async function runNightJob(): Promise<void> {
   // Final sweep to pick up any results missed by the 30-min poller
   await runPostMatchCheck();
 
-  const now = new Date();
-  const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const todayPredictions = await Prediction.find({
-    matchDate: { $gte: last24hStart, $lte: now },
-  }).lean();
-
-  if (!todayPredictions.length) {
-    logger.info('No predictions for today, skipping night summary');
-    return;
-  }
-
-  const finished = todayPredictions.filter((p) => p.resultFetched);
-  const correct = finished.filter((p) => p.isCorrectWinner).length;
-  const exact = finished.filter((p) => p.isExactScore).length;
-
-  if (finished.length > 0) {
-    await sendNightSummary(todayPredictions.length, finished.length, correct, exact);
-  }
-
-  logger.info('Night job completed', {
-    total: todayPredictions.length,
-    finished: finished.length,
-    correct,
-    exact,
-  });
+  logger.info('Night job completed');
 }
 
 export function registerNightJob(): void {

@@ -4,7 +4,6 @@ import { connectMongo, disconnectMongo, isConnected } from './db/mongo';
 import { registerMorningJob, runMorningJob } from './cron/morningJob';
 import { registerPostMatchJob } from './cron/postMatchJob';
 import { registerNightJob } from './cron/nightJob';
-import { registerWeeklyReport } from './cron/weeklyReport';
 import { registerDailyHealthJob } from './cron/dailyHealthJob';
 import { checkAllServices } from './services/health.service';
 import { sendStartupMessage } from './services/telegram.service';
@@ -44,7 +43,6 @@ async function main(): Promise<void> {
   registerMorningJob();
   registerPostMatchJob();
   registerNightJob();
-  registerWeeklyReport();
   registerDailyHealthJob();
 
   healthServer.listen(3000, () => {

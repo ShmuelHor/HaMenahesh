@@ -76,9 +76,52 @@ export const HEBREW_TEAM_NAMES: Record<string, string> = {
   UZB: 'אוזבקיסטן',
   CHN: 'סין',
 
+  // AFC (additional)
+  IDN: 'אינדונזיה',
+  QAT: 'קטר',
+  THA: 'תאילנד',
+  KUW: 'כווית',
+
+  // CAF (additional)
+  ALG: 'אלג\'יריה',
+  COD: 'קונגו',
+  TAN: 'טנזניה',
+  MOZ: 'מוזמביק',
+  CPV: 'קייפ ורד',
+  GIN: 'גינאה',
+  ZIM: 'זימבבואה',
+  GAB: 'גבון',
+  BFA: 'בורקינה פאסו',
+
+  // CONCACAF (additional)
+  CUB: 'קובה',
+  GUA: 'גואטמלה',
+  SLV: 'אל סלבדור',
+  HAI: 'האיטי',
+
+  // UEFA (additional)
+  GRE: 'יוון',
+  ROU: 'רומניה',
+  SVN: 'סלובניה',
+  ISL: 'איסלנד',
+  FIN: 'פינלנד',
+  IRL: 'אירלנד',
+  MNE: 'מונטנגרו',
+  BIH: 'בוסניה',
+  MKD: 'צפון מקדוניה',
+
   // OFC
   NZL: 'ניו זילנד',
 };
+
+// Fallback for teams the API returns with tla: null
+const NAME_TO_TLA: Record<string, string> = {
+  'Qatar': 'QAT',
+};
+
+export function resolveTeamTla(tla: string | null, name: string): string | null {
+  return tla ?? NAME_TO_TLA[name] ?? null;
+}
 
 export function getHebrewName(tla: string | null, fallback: string): string {
   return (tla ? HEBREW_TEAM_NAMES[tla.toUpperCase()] : null) ?? fallback;

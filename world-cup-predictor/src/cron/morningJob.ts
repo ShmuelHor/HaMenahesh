@@ -16,7 +16,7 @@ import {
 } from '../services/telegram.service';
 import { buildMatchPrompt, countryCodeToFlag } from '../utils/prompt.builder';
 import { getFifaRanking } from '../utils/fifa-rankings';
-import { getHebrewName } from '../utils/team-names';
+import { getHebrewName, resolveTeamTla } from '../utils/team-names';
 import { logger } from '../utils/logger';
 import { EnrichedMatch, IPrediction } from '../types';
 import { runPostMatchCheck } from './postMatchJob';
@@ -108,15 +108,17 @@ export async function runMorningJob(): Promise<void> {
       const userMessage = buildMatchPrompt(enriched, history as unknown as IPrediction[]);
       const claudeResult = await getPrediction(userMessage);
 
-      const homeFlag = countryCodeToFlag(match.homeTeam.tla);
-      const awayFlag = countryCodeToFlag(match.awayTeam.tla);
-      const homeRank = getFifaRanking(match.homeTeam.tla);
-      const awayRank = getFifaRanking(match.awayTeam.tla);
+      const homeTla = resolveTeamTla(match.homeTeam.tla, match.homeTeam.name);
+      const awayTla = resolveTeamTla(match.awayTeam.tla, match.awayTeam.name);
+      const homeFlag = countryCodeToFlag(homeTla);
+      const awayFlag = countryCodeToFlag(awayTla);
+      const homeRank = getFifaRanking(homeTla);
+      const awayRank = getFifaRanking(awayTla);
 
       const saved = await Prediction.create({
         matchId,
-        homeTeam: getHebrewName(match.homeTeam.tla, match.homeTeam.name),
-        awayTeam: getHebrewName(match.awayTeam.tla, match.awayTeam.name),
+        homeTeam: getHebrewName(homeTla, match.homeTeam.name),
+        awayTeam: getHebrewName(awayTla, match.awayTeam.name),
         homeFlag,
         awayFlag,
         matchDate,
@@ -131,7 +133,6 @@ export async function runMorningJob(): Promise<void> {
         reasoning: claudeResult.reasoning,
         resultFetched: false,
         preMatchNotified: false,
-        postMatchNotified: false,
         createdAt: new Date(),
       });
 

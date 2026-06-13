@@ -247,6 +247,7 @@ export async function sendYesterdaySummary(
     } else {
       lines.push(he.yesterdaySummary.pending(p.homeFlag, p.homeTeam, p.awayTeam, p.awayFlag));
     }
+    lines.push('');
   }
 
   lines.push('');

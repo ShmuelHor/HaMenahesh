@@ -1,9 +1,8 @@
 import cron from 'node-cron';
 import { config } from '../config';
-import { IPrediction } from '../types';
 import { Prediction } from '../models/prediction.model';
 import { getMatchById } from '../services/football.service';
-import { sendPostMatchResult, sendSystemError } from '../services/telegram.service';
+import { sendSystemError } from '../services/telegram.service';
 import { logger } from '../utils/logger';
 
 function numericMatchId(matchId: string): number {
@@ -59,15 +58,9 @@ export async function runPostMatchCheck(): Promise<void> {
             resultFetched: true,
             isCorrectWinner,
             isExactScore,
-            postMatchNotified: true,
           },
         }
       );
-
-      const updated = await Prediction.findOne({ matchId: pred.matchId }).lean();
-      if (updated) {
-        await sendPostMatchResult(updated as unknown as IPrediction);
-      }
 
       logger.info('Match result saved', {
         matchId: pred.matchId,

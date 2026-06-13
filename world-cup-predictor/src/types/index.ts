@@ -101,7 +101,6 @@ export interface IPrediction {
   isCorrectWinner?: boolean;
   isExactScore?: boolean;
   preMatchNotified: boolean;
-  postMatchNotified: boolean;
   createdAt: Date;
 }
 

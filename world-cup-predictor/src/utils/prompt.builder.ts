@@ -27,6 +27,16 @@ const TLA_TO_FLAG: Record<string, string> = {
   // AFC
   JPN: '🇯🇵', KOR: '🇰🇷', IRN: '🇮🇷', AUS: '🇦🇺', SAU: '🇸🇦',
   IRQ: '🇮🇶', JOR: '🇯🇴', UZB: '🇺🇿', CHN: '🇨🇳',
+  // AFC (additional)
+  IDN: '🇮🇩', QAT: '🇶🇦', THA: '🇹🇭', KUW: '🇰🇼',
+  // CAF (additional)
+  ALG: '🇩🇿', COD: '🇨🇩', TAN: '🇹🇿', MOZ: '🇲🇿', CPV: '🇨🇻',
+  GIN: '🇬🇳', ZIM: '🇿🇼', GAB: '🇬🇦', BFA: '🇧🇫',
+  // CONCACAF (additional)
+  CUB: '🇨🇺', GUA: '🇬🇹', SLV: '🇸🇻', HAI: '🇭🇹',
+  // UEFA (additional)
+  GRE: '🇬🇷', ROU: '🇷🇴', SVN: '🇸🇮', ISL: '🇮🇸', FIN: '🇫🇮',
+  IRL: '🇮🇪', MNE: '🇲🇪', BIH: '🇧🇦', MKD: '🇲🇰',
   // OFC
   NZL: '🇳🇿',
 };

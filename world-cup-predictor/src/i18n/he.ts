@@ -63,20 +63,20 @@ export const he = {
       `⚽ ניחושים מדויקים: ${exact}/${total} (${pct}%)`,
     detailHeader: '📋 <b>פירוט:</b>',
     matchRow: (icon: string, homeFlag: string, home: string, h: number, a: number, away: string, awayFlag: string, actualH: number, actualA: number) =>
-      `${icon} ${homeFlag}${home} ${h}–${a} ${away}${awayFlag} (יצא: ${actualH}–${actualA})`,
+      `${icon} <b>${home}</b> ‏${homeFlag}  ✦  ‏${awayFlag} <b>${away}</b>\n🎯 ניחשתי: ${h}–${a}  ·  ⚽ יצא: ${actualH}–${actualA}`,
     noFinished: 'אין תוצאות לדיווח השבוע.',
   },
 
   yesterdaySummary: {
     header: '📊 <b>סיכום 24 השעות האחרונות — מונדיאל 2026</b>',
     matchRow: (icon: string, homeFlag: string, home: string, predH: number, predA: number, away: string, awayFlag: string, actualH: number, actualA: number) =>
-      `${icon} ${homeFlag} ${home} ${predH}–${predA} ${away} ${awayFlag}  →  יצא: ${actualH}–${actualA}`,
+      `${icon} <b>${home}</b> ‏${homeFlag}  ✦  ‏${awayFlag} <b>${away}</b>\n⚽ תוצאה: ${actualH}–${actualA}\n🎯 ניחשתי: ${predH}–${predA}`,
     pending: (homeFlag: string, home: string, away: string, awayFlag: string) =>
-      `⏳ ${homeFlag} ${home} נגד ${away} ${awayFlag} — תוצאה טרם נקלטה`,
+      `⏳ <b>${home}</b> ‏${homeFlag}  ✦  ‏${awayFlag} <b>${away}</b>\nתוצאה טרם נקלטה`,
     accuracy: (correct: number, total: number, exact: number) =>
-      `📈 <b>דיוק ב-24 שעות:</b> ${correct}/${total} ניצחונות נכונים | ${exact} מדויק`,
+      `📈 <b>דיוק ב-24 שעות:</b>\n✓ ${correct}/${total} ניצחונות נכונים\n⚽ ${exact} מדויק`,
     overallAccuracy: (correct: number, total: number, exact: number) =>
-      `🏆 <b>סה"כ עד כה:</b> ${correct}/${total} ניצחונות נכונים (${Math.round((correct / total) * 100)}%)\n⚽ ניחושים מדויקים: ${exact}/${total} (${Math.round((exact / total) * 100)}%)`,
+      `🏆 <b>סה"כ עד כה:</b>\n✓ ${correct}/${total} ניצחונות נכונים (${Math.round((correct / total) * 100)}%)\n⚽ ${exact}/${total} מדויק (${Math.round((exact / total) * 100)}%)`,
     noResults: '⏳ תוצאות 24 השעות האחרונות טרם התקבלו',
   },
 
